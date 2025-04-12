@@ -169,14 +169,14 @@ const NoteEditorScreen = ({ route, navigation }) => {
           style={dynamicStyles.saveButton}
           labelStyle={{ color: colors.onPrimary }}
         >
-          Save
+          Сохранить
         </Button>
       </View>
 
       {/* Основное содержимое */}
       <ScrollView contentContainerStyle={dynamicStyles.content}>
         <TextInput
-          label="Title"
+          label="Название"
           value={noteData.title}
           onChangeText={(text) => setNoteData(prev => ({ ...prev, title: text }))}
           style={dynamicStyles.input}
@@ -193,7 +193,7 @@ const NoteEditorScreen = ({ route, navigation }) => {
         />
         
         <TextInput
-          label="Content"
+          label="Содержание"
           value={noteData.content}
           onChangeText={(text) => setNoteData(prev => ({ ...prev, content: text }))}
           multiline

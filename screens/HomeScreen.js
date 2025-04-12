@@ -6,8 +6,8 @@ import NoteCard from '../components/NoteCard';
 
 const HomeScreen = ({ navigation }) => {
   const theme = useTheme();
-  const { colors, dark } = useTheme();
-  const { notes, isLoading } = useNotes();
+  const { colors, dark } = theme;
+  const { notes, isLoading, addNote, updateNote, removeNote, removeReminder } = useNotes();
   
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -24,6 +24,29 @@ const HomeScreen = ({ navigation }) => {
     };
   }, [notes, searchQuery]);
 
+  const handleDeleteNote = async (id) => {
+    try {
+      const noteToDelete = notes.find(n => n.id === id);
+      if (noteToDelete?.reminder) {
+        await removeReminder(noteToDelete.reminder.id);
+      }
+      await removeNote(id);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+    }
+  };
+
+  const handleTogglePin = async (note) => {
+    try {
+      await updateNote({
+        ...note,
+        isPinned: !note.isPinned,
+      });
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  };
+
   // Динамические стили
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
@@ -35,8 +58,8 @@ const HomeScreen = ({ navigation }) => {
       padding: 12,
       borderRadius: 8,
       fontSize: 16,
-      backgroundColor: dark ? '#424242' : '#f5f5f5', // Темно-серый в темной теме, светлый в светлой
-      color: dark ? '#ffffff' : '#000000', // Белый текст в темной теме, черный в светлой
+      backgroundColor: dark ? '#424242' : '#f5f5f5',
+      color: dark ? '#ffffff' : '#000000',
       borderWidth: 1,
       borderColor: colors.primary,
     },
@@ -77,6 +100,18 @@ const HomeScreen = ({ navigation }) => {
     },
   }), [colors, dark]);
 
+  const renderNoteItem = ({ item }) => (
+    <NoteCard
+      note={{
+        ...item,
+        color: dark ? '#2d2d2d' : '#ffffff'
+      }}
+      onPress={() => navigation.navigate('NoteEditor', { noteId: item.id })}
+      onDelete={() => handleDeleteNote(item.id)}
+      onTogglePin={() => handleTogglePin(item)}
+    />
+  );
+
   if (isLoading) {
     return (
       <View style={dynamicStyles.loadingContainer}>
@@ -88,7 +123,7 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={dynamicStyles.container}>
       <Appbar.Header style={{ backgroundColor: colors.surface }}>
-        <Appbar.Content title="My Notes" color={colors.text} />
+        <Appbar.Content title="Мои заметки" color={colors.text} />
         <Appbar.Action 
           icon="magnify" 
           onPress={() => {}} 
@@ -98,8 +133,8 @@ const HomeScreen = ({ navigation }) => {
 
       <TextInput
         style={dynamicStyles.searchInput}
-        placeholder="Search notes..."
-        placeholderTextColor={dark ? '#b0b0b0' : '#757575'} // Серый плейсхолдер
+        placeholder="Поиск заметок..."
+        placeholderTextColor={dark ? '#b0b0b0' : '#757575'}
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
@@ -107,8 +142,8 @@ const HomeScreen = ({ navigation }) => {
       {notes.length === 0 ? (
         <View style={dynamicStyles.emptyState}>
           <Text style={dynamicStyles.emptyText}>
-            You don't have any notes yet.{'\n'}
-            Tap the + button to create your first note!
+          У вас еще нет заметок.{'\n'}
+          Нажмите на кнопку +, чтобы создать свою первую заметку!
           </Text>
         </View>
       ) : (
@@ -117,15 +152,7 @@ const HomeScreen = ({ navigation }) => {
             <FlatList
               data={pinnedNotes}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <NoteCard
-                  note={{
-                    ...item,
-                    color: dark ? '#2d2d2d' : '#ffffff' // Темный фон в темной теме
-                  }}
-                  onPress={() => navigation.navigate('NoteEditor', { noteId: item.id })}
-                />
-              )}
+              renderItem={renderNoteItem}
               ListHeaderComponent={
                 <View style={dynamicStyles.sectionHeader}>
                   <Text style={dynamicStyles.sectionTitle}>Pinned Notes</Text>
@@ -137,15 +164,7 @@ const HomeScreen = ({ navigation }) => {
           <FlatList
             data={otherNotes}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <NoteCard
-                note={{
-                  ...item,
-                  color: dark ? '#2d2d2d' : '#ffffff' // Темный фон в темной теме
-                }}
-                onPress={() => navigation.navigate('NoteEditor', { noteId: item.id })}
-              />
-            )}
+            renderItem={renderNoteItem}
             ListHeaderComponent={
               otherNotes.length > 0 && (
                 <View style={dynamicStyles.sectionHeader}>

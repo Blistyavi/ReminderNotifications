@@ -156,7 +156,7 @@ const RemindersScreen = ({ navigation }) => {
     return (
       <View style={dynamicStyles.emptyContainer}>
         <Text style={dynamicStyles.emptyText}>
-          No reminders yet
+        Пока никаких напоминаний...
         </Text>
         <Button 
           mode="contained" 
@@ -165,7 +165,7 @@ const RemindersScreen = ({ navigation }) => {
           labelStyle={{ color: colors.onPrimary }}
           icon="plus"
         >
-          Create Note with Reminder
+          Создайте заметку с напоминанием
         </Button>
       </View>
     );

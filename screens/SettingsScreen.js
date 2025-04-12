@@ -1,39 +1,46 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { List, Divider, useTheme, Switch, Text } from 'react-native-paper';
 import * as Notifications from 'expo-notifications';
-import { PreferencesContext } from '../context/PreferencesContext';
+import { usePreferences } from '../context/PreferencesContext';
 
 const SettingsScreen = () => {
   const theme = useTheme();
   const { colors } = theme;
-  const preferencesContext = useContext(PreferencesContext);
+  const { toggleTheme, isThemeDark } = usePreferences();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  // Проверка разрешений при монтировании
+  // Проверка разрешений для уведомлений
   useEffect(() => {
+    let isMounted = true;
+
     const checkPermissions = async () => {
       try {
         const { status } = await Notifications.getPermissionsAsync();
-        setNotificationsEnabled(status === 'granted');
+        if (isMounted) {
+          setNotificationsEnabled(status === 'granted');
+        }
       } catch (error) {
         console.error('Permission check error:', error);
       }
     };
 
     checkPermissions();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Обработчик переключения уведомлений
+  // Обработчик уведомлений
   const handleNotificationToggle = async (newValue) => {
     try {
       if (newValue) {
         const { status } = await Notifications.requestPermissionsAsync();
-        setNotificationsEnabled(status === 'granted');
-        
         if (status !== 'granted') {
-          alert('Notifications permission is required for reminders');
+          alert('Для работы напоминаний необходимо разрешение на уведомления');
         }
+        setNotificationsEnabled(status === 'granted');
       } else {
         setNotificationsEnabled(false);
       }
@@ -42,13 +49,8 @@ const SettingsScreen = () => {
     }
   };
 
-  const {
-    toggleTheme = () => console.warn('Theme toggle not available'),
-    isThemeDark = false
-  } = preferencesContext || {};
-
   // Динамические стили
-  const dynamicStyles = StyleSheet.create({
+  const styles = StyleSheet.create({
     container: {
       flex: 1,
       padding: 16,
@@ -61,103 +63,114 @@ const SettingsScreen = () => {
       color: colors.onSurface,
     },
     listItem: {
-      paddingVertical: 8,
+      paddingVertical: 12,
     },
     listItemTitle: {
       fontSize: 16,
+      fontWeight: '500',
       color: colors.onSurface,
     },
     listItemDescription: {
       fontSize: 14,
       color: colors.onSurfaceVariant,
+      marginTop: 2,
     },
     divider: {
       marginVertical: 8,
       height: StyleSheet.hairlineWidth,
       backgroundColor: colors.outline,
     },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
     errorText: {
       color: colors.error,
       textAlign: 'center',
-      padding: 20,
+      fontSize: 16,
     }
   });
 
-  if (!preferencesContext) {
-    return (
-      <View style={dynamicStyles.container}>
-        <Text style={dynamicStyles.errorText}>
-          Theme configuration error. Please restart the app.
-        </Text>
-      </View>
-    );
-  }
-
-  const SettingsSwitch = ({ value, onValueChange }) => (
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      color={colors.primary}
-      trackColor={{
-        false: colors.surfaceVariant,
-        true: colors.primaryContainer
-      }}
-    />
-  );
-
   return (
-    <View style={dynamicStyles.container}>
+    <View style={styles.container}>
       <List.Section>
-        <List.Subheader style={dynamicStyles.sectionHeader}>
-          Appearance
+        {/* Appearance Section */}
+        <List.Subheader style={styles.sectionHeader}>
+          Внешний вид
         </List.Subheader>
         
         <List.Item
-          title="Dark Theme"
-          titleStyle={dynamicStyles.listItemTitle}
-          description="Switch between light and dark mode"
-          descriptionStyle={dynamicStyles.listItemDescription}
-          style={dynamicStyles.listItem}
+          title="Темная тема"
+          titleStyle={styles.listItemTitle}
+          description="Переключение между светлой и темной темой"
+          descriptionStyle={styles.listItemDescription}
+          style={styles.listItem}
+          left={() => (
+            <List.Icon 
+              icon={isThemeDark ? 'weather-night' : 'weather-sunny'} 
+              color={colors.primary} 
+            />
+          )}
           right={() => (
-            <SettingsSwitch 
-              value={isThemeDark} 
-              onValueChange={toggleTheme} 
+            <Switch 
+              value={isThemeDark}
+              onValueChange={toggleTheme}
+              color={colors.primary}
+              trackColor={{
+                true: colors.primaryContainer,
+                false: colors.surfaceVariant
+              }}
             />
           )}
         />
         
-        <Divider style={dynamicStyles.divider} />
+        <Divider style={styles.divider} />
 
-        <List.Subheader style={dynamicStyles.sectionHeader}>
-          Notifications
+        {/* Notifications Section */}
+        <List.Subheader style={styles.sectionHeader}>
+          Уведомления
         </List.Subheader>
         
         <List.Item
-          title="Enable Notifications"
-          titleStyle={dynamicStyles.listItemTitle}
-          description="Get reminders for your notes"
-          descriptionStyle={dynamicStyles.listItemDescription}
-          style={dynamicStyles.listItem}
+          title="Разрешить уведомления"
+          titleStyle={styles.listItemTitle}
+          description="Получать напоминания для заметок"
+          descriptionStyle={styles.listItemDescription}
+          style={styles.listItem}
+          left={() => (
+            <List.Icon 
+              icon={notificationsEnabled ? 'bell' : 'bell-off'} 
+              color={colors.primary} 
+            />
+          )}
           right={() => (
-            <SettingsSwitch 
-              value={notificationsEnabled} 
-              onValueChange={handleNotificationToggle} 
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleNotificationToggle}
+              color={colors.primary}
+              trackColor={{
+                true: colors.primaryContainer,
+                false: colors.surfaceVariant
+              }}
             />
           )}
         />
         
-        <Divider style={dynamicStyles.divider} />
+        <Divider style={styles.divider} />
 
-        <List.Subheader style={dynamicStyles.sectionHeader}>
-          About
+        {/* About Section */}
+        <List.Subheader style={styles.sectionHeader}>
+          О приложении
         </List.Subheader>
         
         <List.Item
-          title="App Version"
-          titleStyle={dynamicStyles.listItemTitle}
-          description="ReminderNotes v1.0"
-          descriptionStyle={dynamicStyles.listItemDescription}
-          style={dynamicStyles.listItem}
+          title="Версия приложения"
+          titleStyle={styles.listItemTitle}
+          description="ReminderNotes v1.0.0"
+          descriptionStyle={styles.listItemDescription}
+          style={styles.listItem}
           left={() => (
             <List.Icon icon="information" color={colors.primary} />
           )}
